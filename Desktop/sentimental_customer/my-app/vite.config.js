@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:4000",
+        target: "http://localhost:4002",
         changeOrigin: true,
       },
     },
@@ -16,7 +16,7 @@ export default defineConfig({
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
         "style-src 'self' 'unsafe-inline'",
-        "connect-src 'self' http://localhost:4000 ws://localhost:4000",
+        "connect-src 'self' http://localhost:4002 ws://localhost:4002",
         "img-src 'self' data:",
         "font-src 'self'",
       ].join("; "),
