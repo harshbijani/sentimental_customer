@@ -19,12 +19,12 @@ const PORT = process.env.PORT;
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5174",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
   },
 });
 
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5174" }));
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 app.use(express.json());
 
 app.locals.io = io;
@@ -75,6 +75,6 @@ process.on("SIGTERM", () => {
 
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📡 Accepting clients from: ${process.env.CLIENT_URL || "http://localhost:5174"}`);
+  console.log(`📡 Accepting clients from: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
   console.log(`🐍 Python service at: ${process.env.PYTHON_SERVICE_URL || "http://localhost:5001"}`);
 });

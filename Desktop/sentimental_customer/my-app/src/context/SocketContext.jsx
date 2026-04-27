@@ -54,6 +54,11 @@ export function SocketProvider({ children }) {
       ]);
     });
 
+    socket.on("delete_comment", ({ id }) => {
+      setComments((prev) => prev.filter((c) => c.id !== id));
+      // optionally re-calculate counts here if you track them
+    });
+
     return () => {
       socket.disconnect();
     };
