@@ -1,34 +1,50 @@
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from textblob import TextBlob
+from datetime import datetime, timezone
 
-_analyser = SentimentIntensityAnalyzer()
+_vader = SentimentIntensityAnalyzer()
 
-POSITIVE_THRESHOLD =  0.05
-NEGATIVE_THRESHOLD = -0.05
+COLOR_MAP = {
+    "positive": "#059669",
+    "neutral":  "#d97706",
+    "negative": "#dc2626",
+}
 
+def analyse(text: str, user_id: str = None, timestamp: str = None) -> dict:
+    # VADER
+    vader_raw = _vader.polarity_scores(text)
+    compound  = vader_raw["compound"]
 
-def analyse(text: str) -> dict:
-    """
-    Returns a dict with:
-      label    : "positive" | "neutral" | "negative"
-      compound : float in [-1, 1]
-      scores   : { positive, neutral, negative }
-    """
-    raw = _analyser.polarity_scores(text)
-    compound = raw["compound"]
+    # TextBlob
+    blob = TextBlob(text)
 
-    if compound >= POSITIVE_THRESHOLD:
+    # Label
+    if compound >= 0.05:
         label = "positive"
-    elif compound <= NEGATIVE_THRESHOLD:
+    elif compound <= -0.05:
         label = "negative"
     else:
         label = "neutral"
 
+    # Confidence: average of VADER and TextBlob absolute scores
+    confidence = round((abs(compound) + abs(blob.sentiment.polarity)) / 2, 4)
+
     return {
-        "label": label,
-        "compound": round(compound, 4),
-        "scores": {
-            "positive": round(raw["pos"], 4),
-            "neutral":  round(raw["neu"], 4),
-            "negative": round(raw["neg"], 4),
+        "text":       text,
+        "sentiment":  label,
+        "color":      COLOR_MAP[label],
+        "score":      round(compound, 4),
+        "textblob": {
+            "polarity":     round(blob.sentiment.polarity, 4),
+            "subjectivity": round(blob.sentiment.subjectivity, 4),
         },
+        "vader": {
+            "positive": round(vader_raw["pos"], 4),
+            "neutral":  round(vader_raw["neu"], 4),
+            "negative": round(vader_raw["neg"], 4),
+            "compound": round(compound, 4),
+        },
+        "confidence": confidence,
+        "timestamp":  timestamp or datetime.now(timezone.utc).isoformat(),
+        "user_id":    user_id,
     }

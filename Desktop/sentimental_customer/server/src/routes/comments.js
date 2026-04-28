@@ -14,16 +14,14 @@ router.post("/comment", async (req, res) => {
     const sentiment = await getSentiment(text.trim());
 
     const comment = {
-      id: Date.now().toString(),
-      author: author?.trim() || "Anonymous",
-      text: text.trim(),
+      id:        Date.now().toString(),
+      author:    author?.trim() || "Anonymous",
+      text:      text.trim(),
       sentiment,
-      timestamp: new Date().toISOString(),
+      timestamp: sentiment.timestamp || new Date().toISOString(),
     };
 
-    // Broadcast to every connected client (wall + admin dashboard)
     req.app.locals.io.emit("new_comment", comment);
-
     return res.status(201).json(comment);
   } catch (err) {
     console.error("❌ Sentiment service error:", err.message);

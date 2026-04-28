@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:4002";
-
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
@@ -13,7 +12,6 @@ export function SocketProvider({ children }) {
   const [timeline, setTimeline] = useState([]);
 
   useEffect(() => {
-    // Create socket once
     const socket = io(SERVER_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -21,20 +19,10 @@ export function SocketProvider({ children }) {
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
-      setIsConnected(true);
-    });
+    socket.on("connect",    () => setIsConnected(true));
+    socket.on("disconnect", () => setIsConnected(false));
 
-    socket.on("disconnect", () => {
-      console.log("❌ Socket disconnected");
-      setIsConnected(false);
-    });
-
-    // ✅ Listener is set up once here, never torn down on route change
     socket.on("new_comment", (comment) => {
-      console.log("📨 New comment received:", comment);
-
       setComments((prev) => [comment, ...prev]);
 
       setCounts((prev) => ({
@@ -45,28 +33,17 @@ export function SocketProvider({ children }) {
       setTimeline((prev) => [
         ...prev.slice(-29),
         {
-          time: new Date(comment.timestamp).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          time:     new Date(comment.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           compound: comment.sentiment.compound,
         },
       ]);
     });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, []); // ✅ Empty deps — runs once only, never re-runs
+    return () => socket.disconnect();
+  }, []);
 
   return (
-    <SocketContext.Provider value={{
-      socket: socketRef.current,
-      isConnected,
-      comments,
-      counts,
-      timeline,
-    }}>
+    <SocketContext.Provider value={{ socket: socketRef.current, isConnected, comments, counts, timeline }}>
       {children}
     </SocketContext.Provider>
   );
