@@ -8,24 +8,26 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/", methods=["GET"])
-def index():
-    return jsonify({"service": "sentiment-analysis", "status": "running"}), 200
-
 class SentimentRequest(BaseModel):
     text:      str
     user_id:   Optional[str] = None
     timestamp: Optional[str] = None
 
 class SentimentResponse(BaseModel):
-    text:       str
-    sentiment:  str
-    color:      str
-    score:      float
-    textblob:   dict
-    vader:      dict
-    confidence: float
-    timestamp:  str
+    text:            str
+    sentiment:       str
+    emotion:         str
+    display_emotion: dict
+    color:           str
+    score:           float
+    textblob:        dict
+    vader:           dict
+    confidence:      float
+    timestamp:       str
+
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"service": "sentiment-analysis", "status": "running"}), 200
 
 @app.route("/analyze", methods=["POST"])
 def analyze():

@@ -15,12 +15,14 @@ export async function getSentiment(text, userId = null) {
   );
 
   return {
-    label:      data.sentiment,
-    compound:   data.score,
-    color:      data.color,
-    confidence: data.confidence,
-    textblob:   data.textblob,
-    vader:      data.vader,
-    timestamp:  data.timestamp,
+    label:           data.sentiment,
+    compound:        data.score,
+    color:           data.color,
+    confidence:      data.confidence,
+    emotion:         data.emotion,
+    display_emotion: data.display_emotion,
+    textblob:        data.textblob,
+    vader:           data.vader,
+    timestamp:       data.timestamp,
   };
 }

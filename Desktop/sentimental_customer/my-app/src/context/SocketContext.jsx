@@ -4,12 +4,20 @@ import { io } from "socket.io-client";
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:4002";
 const SocketContext = createContext(null);
 
+const INITIAL_COUNTS = {
+  excited:    0,
+  happy:      0,
+  neutral:    0,
+  unhappy:    0,
+  frustrated: 0,
+};
+
 export function SocketProvider({ children }) {
   const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [comments, setComments] = useState([]);
-  const [counts, setCounts] = useState({ positive: 0, neutral: 0, negative: 0 });
-  const [timeline, setTimeline] = useState([]);
+  const [comments,    setComments]    = useState([]);
+  const [counts,      setCounts]      = useState(INITIAL_COUNTS);
+  const [timeline,    setTimeline]    = useState([]);
 
   useEffect(() => {
     const socket = io(SERVER_URL, {
@@ -25,9 +33,14 @@ export function SocketProvider({ children }) {
     socket.on("new_comment", (comment) => {
       setComments((prev) => [comment, ...prev]);
 
+      // ✅ Use display_emotion key for counting — falls back to sentiment label
+      const emotionKey = comment.sentiment?.display_emotion?.key
+        || comment.sentiment?.label
+        || "neutral";
+
       setCounts((prev) => ({
         ...prev,
-        [comment.sentiment.label]: prev[comment.sentiment.label] + 1,
+        [emotionKey]: (prev[emotionKey] ?? 0) + 1,
       }));
 
       setTimeline((prev) => [

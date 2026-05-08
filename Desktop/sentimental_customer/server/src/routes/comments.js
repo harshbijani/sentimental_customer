@@ -6,9 +6,9 @@ const router = Router();
 router.post("/comment", async (req, res) => {
   const { author, text } = req.body;
 
-  if (!text?.trim()) {
-    return res.status(400).json({ error: "Comment text is required" });
-  }
+  // if (!text?.trim()) {
+  //   return res.status(400).json({ error: "Comment text is required" });
+  // }
 
   try {
     const sentiment = await getSentiment(text.trim());

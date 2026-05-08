@@ -9,11 +9,10 @@ import { registerHandlers } from "./socket/handlers.js";
 const app = express();
 const httpServer = createServer(app);
 
-// ✅ Always reads from server/.env — never falls back to a hardcoded port
 if (!process.env.PORT) {
-  console.error("❌ PORT is not set in server/.env — please add PORT=4002");
+  console.error("PORT is not set in server/.env — please add PORT=4002");
   process.exit(1);
-}
+} // never falls back to a hardcoded port use env
 
 const PORT = process.env.PORT;
 
@@ -30,9 +29,9 @@ app.use(express.json());
 app.locals.io = io;
 
 // Fix "Cannot GET /"
-app.get("/", (_, res) => {
-  res.json({ message: "Sentiment Wall API is running", status: "ok" });
-});
+// app.get("/", (_, res) => {
+//   res.json({ message: "Sentiment Wall API is running", status: "ok" });
+// });
 
 // Fix Chrome DevTools .well-known 404
 app.get("/.well-known/appspecific/com.chrome.devtools.json", (_, res) => {
@@ -41,7 +40,7 @@ app.get("/.well-known/appspecific/com.chrome.devtools.json", (_, res) => {
 
 app.use("/api", commentRoutes);
 
-app.get("/health", (_, res) => res.json({ status: "ok" }));
+// app.get("/health", (_, res) => res.json({ status: "ok" }));
 
 io.on("connection", (socket) => {
   console.log(`✅ Client connected:    ${socket.id}`);
@@ -49,16 +48,16 @@ io.on("connection", (socket) => {
 });
 
 // ✅ Graceful error handling — prints helpful message instead of stack trace
-httpServer.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(`\n❌ Port ${PORT} is already in use.`);
-    console.error(`   Run this to fix it: taskkill /F /IM node.exe`);
-    console.error(`   Then run: npm run dev\n`);
-    process.exit(1);
-  } else {
-    throw err;
-  }
-});
+// httpServer.on("error", (err) => {
+//   if (err.code === "EADDRINUSE") {
+//     console.error(`\n❌ Port ${PORT} is already in use.`);
+//     console.error(`   Run this to fix it: taskkill /F /IM node.exe`);
+//     console.error(`   Then run: npm run dev\n`);
+//     process.exit(1);
+//   } else {
+//     throw err;
+//   }
+// });
 
 // ✅ Clean shutdown on Ctrl+C — always releases the port properly
 process.on("SIGINT", () => {
