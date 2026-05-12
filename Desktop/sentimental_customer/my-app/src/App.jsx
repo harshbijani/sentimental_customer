@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import { SocketProvider } from "./context/SocketContext";
-import CommentWall from "./components/CommentWall";
+import CommentWall    from "./components/CommentWall";
 import AdminDashboard from "./components/AdminDashboard";
 import "./App.css";
 
@@ -8,7 +8,7 @@ function NavLinks() {
   const { pathname } = useLocation();
   return (
     <div className="navbar-links">
-      <Link to="/" className={pathname === "/" ? "active" : ""}>Wall</Link>
+      <Link to="/"      className={pathname === "/"      ? "active" : ""}>Wall</Link>
       <Link to="/admin" className={pathname === "/admin" ? "active" : ""}>Dashboard</Link>
     </div>
   );
@@ -27,7 +27,7 @@ function Layout() {
       </nav>
       <main className={`main-content ${pathname === "/admin" ? "wide" : ""}`}>
         <Routes>
-          <Route path="/" element={<CommentWall />} />
+          <Route path="/"      element={<CommentWall />} />
           <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </main>

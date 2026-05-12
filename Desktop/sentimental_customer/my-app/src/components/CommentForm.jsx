@@ -1,16 +1,19 @@
 import { useState } from "react";
 
-export default function CommentForm() {
-  const [author, setAuthor] = useState("");
-  const [text, setText] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading | error | success
-  const [focused, setFocused] = useState(false);
+const CHAR_LIMIT = 500;
 
-  const charLimit = 500;
-  const remaining = charLimit - text.length;
+export default function CommentForm() {
+  const [author,  setAuthor]  = useState("");
+  const [text,    setText]    = useState("");
+  const [status,  setStatus]  = useState("idle");
+  const [focused, setFocused] = useState(null); // "name" | "text" | null
+
+  const remaining = CHAR_LIMIT - text.length;
+  const isEmpty   = !text.trim();
+  const isLoading = status === "loading";
 
   const submit = async () => {
-    if (!text.trim() || status === "loading") return;
+    if (isEmpty || isLoading) return;
     setStatus("loading");
     try {
       const res = await fetch("/api/comment", {
@@ -19,9 +22,7 @@ export default function CommentForm() {
         body: JSON.stringify({ author, text }),
       });
       if (!res.ok) throw new Error();
-      setText("");
-      setAuthor("");
-      setStatus("success");
+      setText(""); setAuthor(""); setStatus("success");
       setTimeout(() => setStatus("idle"), 2500);
     } catch {
       setStatus("error");
@@ -33,141 +34,132 @@ export default function CommentForm() {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit();
   };
 
-  const isFull = text.length >= charLimit;
+  const isBorderBlue = focused !== null;
 
   return (
     <div style={{
       background: "var(--bg-white)",
-      borderRadius: "20px",
-      border: focused ? "1.5px solid #2563eb" : "1.5px solid var(--border)",
-      boxShadow: focused ? "0 0 0 4px rgba(37,99,235,0.07), var(--shadow-md)" : "var(--shadow-sm)",
-      padding: "20px",
-      transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+      border: `1.5px solid ${isBorderBlue ? "var(--accent)" : "var(--border)"}`,
+      borderRadius: "var(--r-lg)",
+      boxShadow: isBorderBlue
+        ? "0 0 0 3px rgba(79,70,229,0.08), var(--shadow-sm)"
+        : "var(--shadow-xs)",
+      overflow: "hidden",
+      transition: "border-color 0.18s ease, box-shadow 0.18s ease",
     }}>
 
-      {/* Author row */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+      {/* Name row */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        padding: "14px 16px 10px",
+        borderBottom: "1px solid var(--border)",
+      }}>
         <div style={{
-          width: "36px", height: "36px",
-          borderRadius: "10px",
-          background: author
-            ? "linear-gradient(135deg, #2563eb22, #7c3aed33)"
-            : "var(--bg-subtle)",
+          width: "30px", height: "30px",
+          borderRadius: "8px",
+          background: author ? "var(--accent-light)" : "var(--bg-subtle)",
           border: "1px solid var(--border)",
-          display: "grid",
-          placeItems: "center",
-          fontSize: "1rem",
+          display: "grid", placeItems: "center",
+          fontSize: author ? "0.85rem" : "0.9rem",
+          fontWeight: 700,
+          color: author ? "var(--accent)" : "var(--text-tertiary)",
+          transition: "all 0.15s ease",
           flexShrink: 0,
-          fontWeight: 600,
-          color: "var(--text-secondary)",
-          transition: "background 0.2s ease",
         }}>
-          {author ? author[0].toUpperCase() : "👤"}
+          {author ? author[0].toUpperCase() : "?"}
         </div>
         <input
           style={{
-            flex: 1,
-            border: "none",
-            outline: "none",
+            flex: 1, border: "none", outline: "none",
             background: "transparent",
-            fontSize: "0.875rem",
-            fontWeight: 500,
+            fontSize: "0.875rem", fontWeight: 500,
             color: "var(--text-primary)",
             fontFamily: "var(--font-body)",
           }}
           placeholder="Your name (optional)"
           value={author}
           onChange={e => setAuthor(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => setFocused("name")}
+          onBlur={() => setFocused(null)}
         />
       </div>
-
-      {/* Divider */}
-      <div style={{ height: "1px", background: "var(--border)", marginBottom: "14px" }} />
 
       {/* Textarea */}
       <textarea
         style={{
+          display: "block",
           width: "100%",
           border: "none",
           outline: "none",
           background: "transparent",
-          fontSize: "0.95rem",
+          padding: "14px 16px",
+          fontSize: "0.9rem",
           color: "var(--text-primary)",
           lineHeight: 1.65,
           resize: "none",
-          minHeight: "100px",
+          minHeight: "96px",
           fontFamily: "var(--font-body)",
-          fontWeight: 400,
         }}
-        placeholder="Share your experience, thoughts, or suggestions…"
+        placeholder="Share your experience, thoughts, or suggestions… (Ctrl+Enter to send)"
         value={text}
-        onChange={e => setText(e.target.value.slice(0, charLimit))}
+        onChange={e => setText(e.target.value.slice(0, CHAR_LIMIT))}
         onKeyDown={handleKeyDown}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onFocus={() => setFocused("text")}
+        onBlur={() => setFocused(null)}
       />
 
-      {/* Footer row */}
+      {/* Footer */}
       <div style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        marginTop: "14px",
-        paddingTop: "14px",
+        padding: "10px 16px",
         borderTop: "1px solid var(--border)",
+        background: "var(--bg-subtle)",
       }}>
-        <div style={{ display: "flex", align: "center", gap: "12px" }}>
-          <span style={{
-            fontSize: "0.72rem",
-            color: isFull ? "var(--negative)" : "var(--text-tertiary)",
-            fontWeight: isFull ? 600 : 400,
-          }}>
-            {remaining} chars left
-          </span>
-          <span style={{ fontSize: "0.72rem", color: "var(--text-tertiary)" }}>
-            · Ctrl+Enter to send
-          </span>
-        </div>
+        <span style={{
+          fontSize: "0.7rem",
+          color: remaining < 50 ? "var(--negative)" : "var(--text-tertiary)",
+          fontWeight: remaining < 50 ? 600 : 400,
+          transition: "color 0.15s",
+        }}>
+          {remaining} left
+        </span>
 
         <button
           onClick={submit}
-          disabled={!text.trim() || status === "loading"}
+          disabled={isEmpty || isLoading}
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            background: status === "success"
-              ? "var(--positive)"
-              : status === "error"
-              ? "var(--negative)"
-              : !text.trim()
-              ? "var(--bg-subtle)"
-              : "linear-gradient(135deg, #2563eb, #7c3aed)",
-            color: !text.trim() ? "var(--text-tertiary)" : "white",
-            border: "none",
-            borderRadius: "10px",
-            padding: "9px 20px",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            cursor: !text.trim() || status === "loading" ? "not-allowed" : "pointer",
-            fontFamily: "var(--font-body)",
-            transition: "all 0.2s ease",
-            boxShadow: text.trim() && status === "idle"
-              ? "0 2px 8px rgba(37,99,235,0.3)"
-              : "none",
-            letterSpacing: "0.2px",
+            background:
+              status === "success" ? "var(--positive)" :
+              status === "error"   ? "var(--negative)"   :
+              isEmpty              ? "var(--bg-muted)"   :
+              "var(--accent)",
+            color:        isEmpty ? "var(--text-tertiary)" : "white",
+            border:       "none",
+            borderRadius: "var(--r-sm)",
+            padding:      "7px 18px",
+            fontSize:     "0.825rem",
+            fontWeight:   600,
+            cursor:       isEmpty || isLoading ? "not-allowed" : "pointer",
+            fontFamily:   "var(--font-body)",
+            transition:   "all 0.18s ease",
+            display:      "flex",
+            alignItems:   "center",
+            gap:          "6px",
+            boxShadow:    !isEmpty && status === "idle" ? "0 2px 6px rgba(79,70,229,0.28)" : "none",
           }}
         >
-          {status === "loading" && (
+          {isLoading && (
             <span style={{
-              width: "12px", height: "12px",
-              border: "2px solid rgba(255,255,255,0.4)",
+              width: "11px", height: "11px",
+              border: "2px solid rgba(255,255,255,0.35)",
               borderTopColor: "white",
               borderRadius: "50%",
               display: "inline-block",
-              animation: "spinnerSpin 0.7s linear infinite",
+              animation: "spinnerSpin 0.65s linear infinite",
             }} />
           )}
           {status === "loading" ? "Sending…"
@@ -176,10 +168,6 @@ export default function CommentForm() {
            : "Post Feedback"}
         </button>
       </div>
-
-      <style>{`
-        @keyframes spinnerSpin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }

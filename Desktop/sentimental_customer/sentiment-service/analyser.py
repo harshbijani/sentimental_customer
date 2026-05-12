@@ -96,46 +96,31 @@ def get_display_emotion(emotion: str, label: str, score: float) -> dict:
     Maps internal emotion + sentiment label to one of 5 display emotions.
     Stricter thresholds so Excited is rare, Happy and Neutral get fair coverage.
     """
-    # Special detections always map to frustrated
     if emotion in ("Sarcastic", "Frustrated", "Warning"):
         return DISPLAY_EMOTION_MAP["frustrated"]
 
     if label == "positive":
-        # Excited: only for very high scores AND strong joy/surprise emotion
-        # Both conditions must be true — high score alone is not enough
         if abs(score) >= 0.75 and emotion in ("Excited / Happy",):
             return DISPLAY_EMOTION_MAP["excited"]
 
-        # Surprised alone (e.g. "Wow I can't believe how good this is")
-        # needs even higher score to be excited
         if abs(score) >= 0.85 and emotion == "Surprised":
             return DISPLAY_EMOTION_MAP["excited"]
 
-        # Everything else positive → Happy
         return DISPLAY_EMOTION_MAP["happy"]
 
     if label == "negative":
-        # Anger and disgust → Frustrated
         if emotion in ("Angry", "Disgusted"):
             return DISPLAY_EMOTION_MAP["frustrated"]
-        # Sadness, anxiety, fear → Unhappy
         return DISPLAY_EMOTION_MAP["unhappy"]
 
-    # Neutral label → always neutral regardless of emotion
     return DISPLAY_EMOTION_MAP["neutral"]
 
-# ---------------------------
-# Preprocess text
-# ---------------------------
 def preprocess_text(text):
     text = emoji.demojize(text, delimiters=(" ", " "))
     text = text.replace("_", " ")
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-# ---------------------------
-# Technical issue detection
-# ---------------------------
 def detect_issue(text):
     issue_phrases = [
         "can't access", "cannot access", "cant access", "not working",
@@ -147,9 +132,6 @@ def detect_issue(text):
     ]
     return any(phrase in text.lower() for phrase in issue_phrases)
 
-# ---------------------------
-# Warning detection
-# ---------------------------
 def detect_warning(text):
     warning_phrases = [
         "be careful", "buyer beware", "warning", "alert", "caution",
@@ -157,16 +139,12 @@ def detect_warning(text):
     ]
     return any(phrase in text.lower() for phrase in warning_phrases)
 
-# ---------------------------
-# Main function
-# ---------------------------
 def analyse(text: str, user_id: str = None, timestamp: str = None) -> dict:
     cleaned_text = preprocess_text(text)
 
     final_compound = None
     emotion_text = cleaned_text
 
-    # Handle "but" sentences
     if " but " in cleaned_text.lower():
         parts = re.split(r"\bbut\b", cleaned_text, flags=re.IGNORECASE)
         if len(parts) >= 2:
@@ -190,11 +168,9 @@ def analyse(text: str, user_id: str = None, timestamp: str = None) -> dict:
 
             emotion_text = second_part
 
-    # VADER
     vader_raw = _vader.polarity_scores(cleaned_text)
     compound  = vader_raw["compound"] if final_compound is None else round(final_compound, 4)
 
-    # TextBlob
     blob = TextBlob(cleaned_text)
 
     # HuggingFace sentiment
@@ -202,7 +178,7 @@ def analyse(text: str, user_id: str = None, timestamp: str = None) -> dict:
     label_mapping = {"LABEL_0": "negative", "LABEL_1": "neutral", "LABEL_2": "positive"}
     label         = label_mapping.get(hf_sentiment["label"], "neutral")
 
-    # Override for "but" sentences
+    # Override for "but" sentences below
     if final_compound is not None:
         if compound >= 0.05:
             label = "positive"
@@ -211,34 +187,29 @@ def analyse(text: str, user_id: str = None, timestamp: str = None) -> dict:
         else:
             label = "neutral"
 
-    # Mixed sentence fix
+    # BUT Logic
     if abs(compound) < 0.3 and " but " in cleaned_text.lower():
         label    = "neutral"
         compound = 0.0
 
-    # Emotion
     hf_emotion = emotion_model(emotion_text)[0][0]
     emotion    = EMOTION_MAP.get(hf_emotion["label"].lower(), "Neutral")
 
-    # Sarcasm detection
     if detect_sarcasm(cleaned_text):
         emotion  = "Sarcastic"
         label    = "negative"
         compound = -0.4
 
-    # Issue detection
     elif detect_issue(cleaned_text):
         emotion  = "Frustrated"
         label    = "negative"
         compound = -0.5
 
-    # Warning detection
     elif detect_warning(cleaned_text):
         emotion  = "Warning"
         label    = "negative"
         compound = -0.4
 
-    # Final blended score
     if label == "neutral":
         blended_score = 0.0
     else:
@@ -247,7 +218,7 @@ def analyse(text: str, user_id: str = None, timestamp: str = None) -> dict:
             hf_score = -hf_score
         blended_score = round((compound * 0.5) + (hf_score * 0.5), 4)
 
-    # ✅ Map to one of 5 display emotions
+    # Map to one of 5 display emotions
     display_emotion = get_display_emotion(emotion, label, blended_score)
 
     return {
